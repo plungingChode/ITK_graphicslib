@@ -3,6 +3,8 @@
 
 #include <string>
 
+struct SDL_Window;
+struct SDL_Renderer;
 struct SDL_Surface;
 struct _TTF_Font;
 
@@ -88,6 +90,8 @@ public:
 	void set_title(const std::string& title);
 
 private:
+    SDL_Window *wnd;
+    SDL_Renderer *renderer;
     groutput();
 };
 

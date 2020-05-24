@@ -1,6 +1,6 @@
 #include "graphics.hpp"
-#include <SDL/SDL.h>
-#include <SDL/SDL_ttf.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #include <cstdlib>
 #include <algorithm>
@@ -52,18 +52,17 @@ namespace
         return 0;
     }
 
-    int mkkeycode(SDLKey sym, Uint16 unicode)
+    int mkkeycode(int sym)
     {
         int mysym = findkey(keysym_tbl, keysym_end, sym);
-        if (mysym != 0)
-            return mysym;
-        else if (unicode != 0)
+        if (mysym != 0) 
         {
-            int mycode = findkey(charcode_tbl, charcode_end, unicode);
-            return mycode == 0 ? unicode : mycode;
+            return mysym;
         }
         else
+        {
             return sym;
+        }
     }
 
     Uint32 timer_event(Uint32 interval, void*)
@@ -95,7 +94,7 @@ genv::canvas& genv::canvas::operator=(const genv::canvas& c) {
 	buf=0;
 
     if (c.buf) {
-        buf = SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, c.buf->w, c.buf->h, 32,0,0,0,0);
+        buf = SDL_CreateRGBSurface(0, c.buf->w, c.buf->h, 32,0,0,0,0);
         SDL_Rect trg;
         trg.x = 0;
         trg.y = 0;
@@ -130,7 +129,7 @@ genv::groutput::groutput()
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
         exit(1);
-    SDL_EnableUNICODE(1);
+    // SDL_EnableUNICODE(1);
     buf = 0;
     if (TTF_Init() < 0)
       exit(1);
@@ -138,6 +137,7 @@ genv::groutput::groutput()
 
 genv::groutput::~groutput()
 {
+    if (wnd) SDL_DestroyWindow(wnd);
     if (buf) SDL_FreeSurface(buf);
     if (font) TTF_CloseFont(font);
     buf=0;
@@ -156,7 +156,7 @@ genv::canvas::~canvas() {
 bool genv::canvas::open(unsigned width, unsigned height)
 {
     if (buf) SDL_FreeSurface(buf);
-    buf = SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, width, height, 32,0,0,0,0);
+    buf = SDL_CreateRGBSurface(0, width, height, 32,0,0,0,0);
     pt_x = width/2;
     pt_y = height/2;
     return buf != 0;
@@ -165,10 +165,11 @@ bool genv::canvas::open(unsigned width, unsigned height)
 bool genv::groutput::open(unsigned width, unsigned height, bool fullscreen)
 {
     if (fullscreen) {
-        buf = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
+        wnd = SDL_CreateWindow("SDL app", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_FULLSCREEN);
     } else {
-        buf = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
+        wnd = SDL_CreateWindow("SDL app", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, 0);
     }
+    buf = SDL_GetWindowSurface(wnd);
     pt_x = width/2;
     pt_y = height/2;
     return buf != 0;
@@ -182,7 +183,7 @@ void genv::groutput::showmouse(bool toggle) {
         SDL_ShowCursor(SDL_DISABLE);
 }
 void genv::groutput::movemouse(int x, int y) {
-    SDL_WarpMouse(x, y);
+    SDL_WarpMouseInWindow(wnd, x, y);
 }
 
 bool genv::canvas::save(const std::string& file) const
@@ -191,7 +192,7 @@ bool genv::canvas::save(const std::string& file) const
 }
 
 void genv::groutput::set_title(const std::string& title) {
-	SDL_WM_SetCaption(title.c_str(),0);
+	SDL_SetWindowTitle(wnd, title.c_str());
 }
 
 
@@ -307,7 +308,8 @@ void genv::canvas::draw_text(const std::string& str)
                 {
                     unsigned px = (charfaces[code][row] >> 4*col) & 0xF;
 
-                    project(buf, draw_clr, pt_x, pt_y, px, 15);
+                    // draw default font on baseline
+                    project(buf, draw_clr, pt_x, pt_y + cascent(), px, 15);
                     ++pt_y;
                 }
                 pt_y -= cdescent();
@@ -325,7 +327,7 @@ void genv::canvas::draw_text(const std::string& str)
             gc = (draw_clr & 0x00ff00) >>  8,
             bc = (draw_clr & 0x0000ff);
         SDL_Color text_clr = {rc, gc, bc};
-        SDL_Surface* t;
+        SDL_Surface* t = nullptr;
         // render text in blended mode (AA)
         if (antialiastext) {
             t = TTF_RenderUTF8_Blended(font, str.c_str(), text_clr);
@@ -336,7 +338,7 @@ void genv::canvas::draw_text(const std::string& str)
         offset.x = pt_x;
         offset.y = pt_y;
         pt_x += t->w;
-        SDL_BlitSurface( t, NULL, buf, &offset);
+        SDL_BlitSurface( t, NULL, buf, &offset );
         //std::cout << "DIMENSIONS: " << t->w << "," << t->h << std::endl;
         SDL_FreeSurface(t);
     }
@@ -350,7 +352,7 @@ void genv::canvas::blitfrom(const genv::canvas &c, short x1, short y1, unsigned 
     SDL_Rect sr={x1,y1,x2,y2};
     SDL_Rect tr={x3,y3,x2,y2};
     if (c.transp) {
-        SDL_SetColorKey(c.buf, SDL_SRCCOLORKEY|SDL_RLEACCEL,SDL_MapRGB(c.buf->format, 0, 0 ,0));
+        SDL_SetColorKey(c.buf, SDL_TRUE, SDL_MapRGB(c.buf->format, 0, 0 ,0));
     }
     SDL_BlitSurface(c.buf, &sr, buf, &tr);
 }
@@ -375,7 +377,7 @@ bool genv::canvas::load_font(const std::string& fname, int fontsize, bool antial
 
 void genv::groutput::refresh()
 {
-    SDL_Flip(buf);
+    SDL_UpdateWindowSurface(wnd);
 }
 
 genv::groutput& genv::groutput::instance()
@@ -425,7 +427,8 @@ genv::grinput& genv::grinput::wait_event(event& ev)
             case SDL_KEYUP:
             case SDL_KEYDOWN:
                 ev.type = ev_key;
-                ev.keycode = mkkeycode(se.key.keysym.sym, se.key.keysym.unicode);
+                // ev.keycode = mkkeycode(se.key.keysym.sym, se.key.keysym.unicode);
+                ev.keycode = mkkeycode(se.key.keysym.sym);
                 ev.keycode *= (se.type == SDL_KEYUP ? -1 : 1);
                 got = ev.keycode != 0;
                 break;
@@ -436,6 +439,11 @@ genv::grinput& genv::grinput::wait_event(event& ev)
                 ev.button *= (se.button.state == SDL_RELEASED ? -1 : 1);
                 ev.pos_x = se.button.x;
                 ev.pos_y = se.button.y;
+                got = true;
+                break;
+            case SDL_MOUSEWHEEL: // TODO fix touchpad scrolling
+                ev.type = ev_mouse;
+                ev.button = (se.wheel.y > 0 ? btn_wheelup : btn_wheeldown);
                 got = true;
                 break;
             case SDL_MOUSEMOTION:
