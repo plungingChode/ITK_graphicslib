@@ -26,13 +26,20 @@ namespace
 
     inline void project(SDL_Surface* screen, int draw_clr, int x, int y, int val, int max)
     {
-        Uint32& pix = pixel(screen, x, y);
+        Uint32 &pix = pixel(screen, x, y);
         static const int c[] = {0, 8, 16};
         for (int i=0; i<3; ++i)
         {
-            int col = ( ((pix >> c[i])      & 0xff) * (max-val) +
-                        ((draw_clr >> c[i]) & 0xff) * val) / max;
-            pix = (pix & (~(0xff << c[i]))) | (col << c[i]);
+            int col1 = ((pix      >> c[i]) & 0xFF) * (max - val);
+            int col2 = ((draw_clr >> c[i] & 0xFF)  * val);
+
+            int col = (col1 + col2) / max;
+            
+            pix = (pix & ~(0xFF << c[i])) | (col << c[i]);
+
+            // int col = ( ((pix >> c[i])      & 0xff) * (max-val) +
+            //             ((draw_clr >> c[i]) & 0xff) * val) / max;
+            // pix = (pix & (~(0xff << c[i]))) | (col << c[i]);
         }
     }
 
@@ -137,8 +144,8 @@ genv::groutput::groutput()
 
 genv::groutput::~groutput()
 {
-    if (wnd) SDL_DestroyWindow(wnd);
     if (buf) SDL_FreeSurface(buf);
+    if (wnd) SDL_DestroyWindow(wnd);
     if (font) TTF_CloseFont(font);
     buf=0;
     font=0;
@@ -308,8 +315,12 @@ void genv::canvas::draw_text(const std::string& str)
                 {
                     unsigned px = (charfaces[code][row] >> 4*col) & 0xF;
 
-                    // draw default font on baseline
-                    project(buf, draw_clr, pt_x, pt_y + cascent(), px, 15);
+                    /* draw default font on baseline, causes access violation 
+                       if pt_y + cascent() points outside the surface :( */
+                    // project(buf, draw_clr, pt_x, pt_y + cascent(), px, 15);
+
+                    // default font not on baseline
+                    project(buf, draw_clr, pt_x, pt_y, px, 15);
                     ++pt_y;
                 }
                 pt_y -= cdescent();
