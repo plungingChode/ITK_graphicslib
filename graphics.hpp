@@ -4,7 +4,6 @@
 #include <string>
 
 struct SDL_Window;
-struct SDL_Renderer;
 struct SDL_Surface;
 struct _TTF_Font;
 
@@ -91,7 +90,6 @@ public:
 
 private:
     SDL_Window *wnd;
-    SDL_Renderer *renderer;
     groutput();
 };
 
