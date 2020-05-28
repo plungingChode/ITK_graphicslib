@@ -1,1 +1,1 @@
-### ITK Libgraphics SDL2/MSVC port
+### ITK Libgraphics SDL2 port
