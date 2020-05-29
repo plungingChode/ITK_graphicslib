@@ -30,16 +30,9 @@ namespace
         static const int c[] = {0, 8, 16};
         for (int i=0; i<3; ++i)
         {
-            int col1 = ((pix      >> c[i]) & 0xFF) * (max - val);
-            int col2 = ((draw_clr >> c[i] & 0xFF)  * val);
-
-            int col = (col1 + col2) / max;
-            
-            pix = (pix & ~(0xFF << c[i])) | (col << c[i]);
-
-            // int col = ( ((pix >> c[i])      & 0xff) * (max-val) +
-            //             ((draw_clr >> c[i]) & 0xff) * val) / max;
-            // pix = (pix & (~(0xff << c[i]))) | (col << c[i]);
+            int col = ( ((pix >> c[i])      & 0xff) * (max-val) +
+                        ((draw_clr >> c[i]) & 0xff) * val) / max;
+            pix = (pix & (~(0xff << c[i]))) | (col << c[i]);
         }
     }
 
@@ -164,8 +157,8 @@ bool genv::canvas::open(unsigned width, unsigned height)
 {
     if (buf) SDL_FreeSurface(buf);
     buf = SDL_CreateRGBSurface(0, width, height, 32,0,0,0,0);
-    pt_x = width/2;
-    pt_y = height/2;
+    pt_x = static_cast<short>(width/2);
+    pt_y = static_cast<short>(height/2);
     return buf != 0;
 }
 
@@ -177,8 +170,8 @@ bool genv::groutput::open(unsigned width, unsigned height, bool fullscreen)
         wnd = SDL_CreateWindow("SDL app", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, 0);
     }
     buf = SDL_GetWindowSurface(wnd);
-    pt_x = width/2;
-    pt_y = height/2;
+    pt_x = static_cast<short>(width/2);
+    pt_y = static_cast<short>(height/2);
     return buf != 0;
 }
 
@@ -216,8 +209,8 @@ bool genv::canvas::move_point(int x, int y)
     if (nx < 0 || ny < 0 || nx >= buf->w || ny >= buf->h)
         return false;
 
-    pt_x = nx;
-    pt_y = ny;
+    pt_x = static_cast<short>(nx);
+    pt_y = static_cast<short>(ny);
     return true;
 }
 
@@ -310,7 +303,7 @@ void genv::canvas::draw_text(const std::string& str)
             unsigned char code = str[i];
             for (int col = 0; col < charwidth; ++col)
             {
-                pt_y -= cascent();
+                pt_y -= static_cast<short>(cascent());
                 for (int row = 0; row < charheight; ++row)
                 {
                     unsigned px = (charfaces[code][row] >> 4*col) & 0xF;
@@ -323,7 +316,7 @@ void genv::canvas::draw_text(const std::string& str)
                     project(buf, draw_clr, pt_x, pt_y, px, 15);
                     ++pt_y;
                 }
-                pt_y -= cdescent();
+                pt_y -= static_cast<short>(cdescent());
 
                 if (pt_x < buf->w-1)
                     ++pt_x;
@@ -334,10 +327,11 @@ void genv::canvas::draw_text(const std::string& str)
     }
     else { // SDL_ttf
         // get color from draw_clr:
-        unsigned char rc = (draw_clr & 0xff0000) >> 16,
-            gc = (draw_clr & 0x00ff00) >>  8,
-            bc = (draw_clr & 0x0000ff);
-        SDL_Color text_clr = {rc, gc, bc};
+        typedef unsigned char uchar;
+        uchar r = static_cast<uchar>((draw_clr & 0xff0000) >> 16);
+        uchar g = static_cast<uchar>((draw_clr & 0x00ff00) >>  8);
+        uchar b = static_cast<uchar>((draw_clr & 0x0000ff));
+        SDL_Color text_clr = {r, g, b, 0xFF};
         SDL_Surface* t = nullptr;
         // render text in blended mode (AA)
         if (antialiastext) {
@@ -348,18 +342,18 @@ void genv::canvas::draw_text(const std::string& str)
         SDL_Rect offset;
         offset.x = pt_x;
         offset.y = pt_y;
-        pt_x += t->w;
+        pt_x += static_cast<short>(t->w);
         SDL_BlitSurface( t, NULL, buf, &offset );
         //std::cout << "DIMENSIONS: " << t->w << "," << t->h << std::endl;
         SDL_FreeSurface(t);
     }
 }
 
-void genv::canvas::blitfrom(const genv::canvas &c, short x1, short y1, unsigned short x2, unsigned short y2, short x3, short y3) {
+void genv::canvas::blitfrom(const genv::canvas &c, short x1, short y1, short x2, short y2, short x3, short y3) {
     if (x1==-1) x1=0;
     if (y1==-1) y1=0;
-    if (x2==-1) x2=c.buf->w;
-    if (y2==-1) y2=c.buf->h;
+    if (x2==-1) x2=static_cast<short>(c.buf->w);
+    if (y2==-1) y2=static_cast<short>(c.buf->h);
     SDL_Rect sr={x1,y1,x2,y2};
     SDL_Rect tr={x3,y3,x2,y2};
     if (c.transp) {
@@ -414,7 +408,7 @@ void genv::grinput::timer(int wait)
 
 genv::grinput& genv::grinput::wait_event(event& ev)
 {
-    static event nullev = { 0, 0, 0, 0, 0 };
+    static event nullev = { 0, 0, 0, 0, 0, 0 };
     ev = nullev;
     if (quit)
         return *this;

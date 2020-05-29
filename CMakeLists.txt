@@ -7,9 +7,11 @@ if (MSVC)
   include_directories( $ENV{HOME}/include )
   link_directories( $ENV{HOME}/lib )
 
+  add_compile_options(/W4)
+
   link_libraries (
-    SDL2
-    SDL2_ttf
+    SDL2.dll
+    SDL2_ttf.dll
   )
 else ()
   link_libraries (

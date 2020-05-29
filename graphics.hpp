@@ -29,7 +29,7 @@ public:
     void draw_line(int x, int y);
     void draw_box(int x, int y);
     void draw_text(const std::string& str);
-    void blitfrom(const canvas &c, short x1, short y1, unsigned short x2, unsigned short y2, short x3, short y3);
+    void blitfrom(const canvas &c, short x1, short y1, short x2, short y2, short x3, short y3);
 
     bool load_font(const std::string& fname, int fontsize = 16, bool antialias=true);
     void set_antialias(bool antialias) {antialiastext=antialias;}
@@ -57,7 +57,7 @@ protected:
 
     template <typename T>
     inline int sgn(const T& a) {
-	if (a<0) return -1; if (a>0) return 1; return 0;
+        if (a < 0) { return -1; } else if (a > 0) { return 1; } else { return 0; }
     }
 
     short pt_x;
@@ -235,7 +235,6 @@ struct event
     int button;
     int time;
     int type;
-
 };
 
 // Class of input device (singleton)
