@@ -1,8 +1,6 @@
 #include "graphics2.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include <cmath>
-#include <algorithm>
 
 #include "char3.h"
 #include "keytbl.h"
@@ -60,17 +58,17 @@ void canvas::draw_line(int x, int y, bool relative) {
 
 	if (std::abs(x) >= std::abs(y))
 	{
-			xstep = xdir;
-			yshift = ydir;
-			steps = std::abs(x);
-			shifts = std::abs(y);
+		xstep = xdir;
+		yshift = ydir;
+		steps = std::abs(x);
+		shifts = std::abs(y);
 	}
 	else
 	{
-			ystep = ydir;
-			xshift = xdir;
-			steps = std::abs(y);
-			shifts = std::abs(x);
+		ystep = ydir;
+		xshift = xdir;
+		steps = std::abs(y);
+		shifts = std::abs(x);
 	}
 
 	dot();
@@ -130,9 +128,9 @@ void canvas::draw_text(const char *s, size_t len) {
 
 		SDL_Surface* t;
 		if (font_info.antialias) {
-				t = TTF_RenderUTF8_Blended(loaded_font, s, text_color);
+			t = TTF_RenderUTF8_Blended(loaded_font, s, text_color);
 		} else {
-				t = TTF_RenderUTF8_Solid(loaded_font, s, text_color);
+			t = TTF_RenderUTF8_Solid(loaded_font, s, text_color);
 		}
 
 		SDL_Rect dest = { draw_x, draw_y - cascent(), 0, 0 };
@@ -325,8 +323,8 @@ groutput::~groutput() {
 
 groutput& groutput::instance()
 {
-    static groutput instance;
-    return instance;
+	static groutput instance;
+	return instance;
 }
 
 bool groutput::open(int width, int height, std::string title, bool fullscreen) {
@@ -365,6 +363,8 @@ grinput& grinput::instance()
 	return instance;
 }
 
+namespace 
+{
 SDL_TimerID timer_id = 0;
 
 int find_key(int key) {
@@ -386,6 +386,7 @@ int find_key(int key) {
 	}
 
 	return key;
+}
 }
 
 grinput& genv::grinput::wait_event(event& ev)
